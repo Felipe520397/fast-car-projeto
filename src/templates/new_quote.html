@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Fast-Car + | Pedir Orçamento{% endblock %}
+
+{% block content %}
+<div style="max-width: 720px; margin: 0 auto;">
+    <div class="card">
+        <div style="margin-bottom: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 1rem;">
+            <h2 style="font-size: 1.6rem; color: #111; margin-bottom: 0.3rem;">
+                Solicitar Novo Orçamento
+            </h2>
+            <p style="color: #666; font-size: 0.95rem;">
+                Preencha os detalhes do seu veículo e o serviço desejado. Nossa equipe técnica avaliará e enviará uma proposta personalizada.
+            </p>
+        </div>
+
+        <form method="POST" action="{{ url_for('create_quote_action') }}">
+            <div class="form-group">
+                <label class="form-label" for="vehicle_model">Modelo do Veículo *</label>
+                <input type="text" id="vehicle_model" name="vehicle_model" class="form-control" 
+                       placeholder="Ex: Toyota Hilux SW4, Honda Civic, Yamaha Lander..." required>
+                <div class="form-hint">Informe marca, modelo e versão do carro ou moto.</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label" for="vehicle_year">Ano de Fabricação</label>
+                    <input type="number" id="vehicle_year" name="vehicle_year" class="form-control" 
+                           placeholder="Ex: 2021" min="1980" max="2027">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="license_plate">Placa (Opcional)</label>
+                    <input type="text" id="license_plate" name="license_plate" class="form-control" 
+                           placeholder="Ex: BRA2E19">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="service_type">Tipo de Serviço *</label>
+                <select id="service_type" name="service_type" class="form-select" required>
+                    <option value="" disabled {% if not selected_service %}selected{% endif %}>Selecione uma categoria...</option>
+                    <option value="Chave Smart Key" {% if selected_service == 'Chave Smart Key' %}selected{% endif %}>🔑 Chave Smart Key (Cópia / Codificação OBD2)</option>
+                    <option value="Painel Digital" {% if selected_service == 'Painel Digital' %}selected{% endif %}>📟 Painel Digital e Customização</option>
+                    <option value="Som & Multimídia" {% if selected_service == 'Som & Multimídia' %}selected{% endif %}>🔊 Som Automotivo & Central Multimídia</option>
+                    <option value="Iluminação LED" {% if selected_service == 'Iluminação LED' %}selected{% endif %}>💡 Iluminação LED & Faróis</option>
+                    <option value="Insulfilm & Estética" {% if selected_service == 'Insulfilm & Estética' %}selected{% endif %}>🛡️ Insulfilm / Película Térmica</option>
+                    <option value="Clube VIP" {% if selected_service == 'Clube VIP' %}selected{% endif %}>💎 Atendimento Clube VIP (Higienização/Benefícios)</option>
+                    <option value="Outro Serviço" {% if selected_service == 'Outro Serviço' %}selected{% endif %}>⚙️ Outro Serviço / Manutenção Elétrica Geral</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="description">Descrição do Problema ou Projeto *</label>
+                <textarea id="description" name="description" class="form-textarea" rows="4" 
+                          placeholder="Conte o que precisa ser feito (ex: perdi a chave reserva, quero trocar o chicote do som, lâmpada queimada...)" required></textarea>
+                <div class="form-hint">Quanto mais detalhes, mais preciso será o pré-diagnóstico.</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="image_name">Foto / Documento (Opcional)</label>
+                <input type="text" id="image_name" name="image_name" class="form-control" 
+                       placeholder="Ex: uploads/chave_painel.jpg">
+                <div class="form-hint">Referência da foto para armazenamento (MinIO).</div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end; align-items: center;">
+                <a href="{{ url_for('list_quotes') }}" class="btn btn-outline">Cancelar</a>
+                <button type="submit" class="btn">
+                    ✓ Enviar Solicitação de Orçamento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

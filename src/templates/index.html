@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Fast-Car + | Início{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <h2>Orçamentos Inteligentes & Cuidados Automotivos</h2>
+    <p>
+        Soluções de alta performance em eletroeletrônica, som automotivo, iluminação LED, insulfilm 
+        e chaves presenciais Smart Key sem filas e sem perda de tempo.
+    </p>
+
+    <div class="hero-actions">
+        {% if current_user %}
+            {% if current_user.role in ['admin', 'funcionario'] %}
+                <a href="{{ url_for('list_quotes') }}" class="btn">
+                    🛡️ Acessar Painel de Orçamentos (Admin)
+                </a>
+                <a href="{{ url_for('services_page') }}" class="btn btn-secondary">
+                    Catálogo de Serviços
+                </a>
+            {% else %}
+                <a href="{{ url_for('new_quote_page') }}" class="btn">
+                    + Pedir Orçamento Agora
+                </a>
+                <a href="{{ url_for('list_quotes') }}" class="btn btn-secondary">
+                    Ver Meus Orçamentos
+                </a>
+            {% endif %}
+        {% else %}
+            <a href="{{ url_for('new_quote_page') }}" class="btn">
+                + Pedir Orçamento Online
+            </a>
+            <a href="{{ url_for('login_page') }}" class="btn btn-secondary">
+                Entrar / Login
+            </a>
+            <a href="{{ url_for('services_page') }}" class="btn btn-outline-light">
+                Conhecer Serviços
+            </a>
+        {% endif %}
+    </div>
+</section>
+
+<div class="feature-grid">
+    <div class="feature-card">
+        <span class="feature-icon">🚗</span>
+        <h3>Orçamento Rápido</h3>
+        <p>Informe o modelo do veículo e o serviço desejado. Nossa equipe técnica analisa os detalhes e responde com agilidade.</p>
+    </div>
+
+    <div class="feature-card">
+        <span class="feature-icon">🔑</span>
+        <h3>Chaves Smart Key</h3>
+        <p>Codificação presencial via OBD2, confecção de cópias e reposição para veículos nacionais e importados.</p>
+    </div>
+
+    <div class="feature-card">
+        <span class="feature-icon">💎</span>
+        <h3>Clube VIP Fast-Car +</h3>
+        <p>Assinatura mensal por R$ 49,90 com 1 higienização de ar-condicionado inclusa todo mês e 5% de desconto geral.</p>
+    </div>
+
+    <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>Eletrônica & Som</h3>
+        <p>Instalação de painéis digitais, kits multimídia, módulos de som e iluminação LED sem romper chicotes de fábrica.</p>
+    </div>
+</div>
+
+<div class="card" style="text-align: center; background: #fff;">
+    <h3 style="font-size: 1.4rem; margin-bottom: 0.5rem; color: #111;">Pronto para transformar seu veículo?</h3>
+    <p style="color: #666; max-width: 600px; margin: 0 auto 1.5rem auto;">
+        Solicite um orçamento sem compromisso e nossa equipe entrará em contato com a melhor proposta.
+    </p>
+    <a href="{{ url_for('new_quote_page') }}" class="btn">
+        Solicitar Orçamento Agora
+    </a>
+</div>
+{% endblock %}
+

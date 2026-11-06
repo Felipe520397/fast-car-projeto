@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Fast-Car + | Acesso ao Sistema{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1 style="font-size: 1.8rem; margin-bottom: 0.2rem;">
+                FAST-CAR<span style="color: var(--primary);">+</span>
+            </h1>
+            <h2>Entrar na Plataforma</h2>
+            <p>Acesse com seu e-mail para acompanhar ou gerenciar orçamentos</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('login_action') }}">
+            <input type="hidden" name="next" value="{{ next_url or '' }}">
+            
+            <div class="form-group">
+                <label class="form-label" for="email">E-mail Cadastrado</label>
+                <input type="email" id="email" name="email" class="form-control" 
+                       placeholder="seu.email@exemplo.com" required autofocus>
+                <div class="form-hint">Dica: use <code>admin@fastcar.com</code> ou <code>cliente@email.com</code></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Senha de Acesso</label>
+                <input type="password" id="password" name="password" class="form-control" 
+                       placeholder="Digite sua senha" value="123456" required>
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%; padding: 0.8rem; margin-top: 0.5rem;">
+                Entrar no Sistema
+            </button>
+        </form>
+
+        <div class="divider">
+            <span>Ou Acesso Rápido de Teste (1 Clique)</span>
+        </div>
+
+        <div class="quick-login-grid">
+            <a href="{{ url_for('quick_login', user_id=1, next=next_url) }}" class="quick-login-btn">
+                <div>
+                    <strong>🛡️ Dono Fast-Car</strong>
+                    <div style="font-size: 0.8rem; color: #666;">admin@fastcar.com</div>
+                </div>
+                <span class="quick-login-role" style="background: #ffebee; color: #c62828;">ADMIN</span>
+            </a>
+
+            <a href="{{ url_for('quick_login', user_id=3, next=next_url) }}" class="quick-login-btn">
+                <div>
+                    <strong>👤 Marcos Cliente</strong>
+                    <div style="font-size: 0.8rem; color: #666;">cliente@email.com</div>
+                </div>
+                <span class="quick-login-role" style="background: #e8f5e9; color: #2e7d32;">CLIENTE</span>
+            </a>
+
+            <a href="{{ url_for('quick_login', user_id=2, next=next_url) }}" class="quick-login-btn">
+                <div>
+                    <strong>🔧 Instalador Técnico</strong>
+                    <div style="font-size: 0.8rem; color: #666;">tech@fastcar.com</div>
+                </div>
+                <span class="quick-login-role" style="background: #e1f5fe; color: #0277bd;">FUNCIONÁRIO</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

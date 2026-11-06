@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if current_user and current_user.role in ['admin', 'funcionario'] %}
+        Fast-Car + | Gestão de Orçamentos (Admin)
+    {% else %}
+        Fast-Car + | Meus Orçamentos
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+
+{% if current_user and current_user.role in ['admin', 'funcionario'] %}
+    <!-- ============================================================== -->
+    <!-- VISÃO ADMINISTRADOR / FUNCIONÁRIO                             -->
+    <!-- ============================================================== -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="font-size: 1.8rem; color: #111; margin-bottom: 0.2rem;">
+                🛡️ Painel de Gestão de Orçamentos
+            </h2>
+            <p style="color: #666; font-size: 0.95rem;">
+                Visão administrativa com todas as solicitações de clientes da oficina.
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{{ url_for('new_quote_page') }}" class="btn">
+                + Novo Orçamento
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Métricas e Resumo -->
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div class="stat-number">{{ quotes|length }}</div>
+            <div class="stat-label">Total de Pedidos</div>
+        </div>
+        <div class="stat-box pending">
+            <div class="stat-number">{{ quotes|selectattr("status", "equalto", "pendente")|list|length }}</div>
+            <div class="stat-label">Pendentes</div>
+        </div>
+        <div class="stat-box analysis">
+            <div class="stat-number">{{ quotes|selectattr("status", "equalto", "em_analise")|list|length }}</div>
+            <div class="stat-label">Em Análise</div>
+        </div>
+        <div class="stat-box approved">
+            <div class="stat-number">{{ quotes|selectattr("status", "in", ["aprovado", "concluido"])|list|length }}</div>
+            <div class="stat-label">Aprovados / Finalizados</div>
+        </div>
+    </div>
+
+    <!-- Filtros de Status -->
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <a href="{{ url_for('list_quotes') }}" 
+           class="btn btn-sm {% if not current_status_filter %}btn-secondary{% else %}btn-outline{% endif %}">
+            Todos ({{ quotes_all_count }})
+        </a>
+        <a href="{{ url_for('list_quotes', status='pendente') }}" 
+           class="btn btn-sm {% if current_status_filter == 'pendente' %}btn-secondary{% else %}btn-outline{% endif %}">
+            Pendentes
+        </a>
+        <a href="{{ url_for('list_quotes', status='em_analise') }}" 
+           class="btn btn-sm {% if current_status_filter == 'em_analise' %}btn-secondary{% else %}btn-outline{% endif %}">
+            Em Análise
+        </a>
+        <a href="{{ url_for('list_quotes', status='aprovado') }}" 
+           class="btn btn-sm {% if current_status_filter == 'aprovado' %}btn-secondary{% else %}btn-outline{% endif %}">
+            Aprovados
+        </a>
+        <a href="{{ url_for('list_quotes', status='concluido') }}" 
+           class="btn btn-sm {% if current_status_filter == 'concluido' %}btn-secondary{% else %}btn-outline{% endif %}">
+            Concluídos
+        </a>
+    </div>
+
+    <div class="card" style="padding: 1rem;">
+        {% if quotes %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th>Cliente</th>
+                        <th>Veículo</th>
+                        <th>Serviço</th>
+                        <th>Descrição</th>
+                        <th>Status Atual</th>
+                        <th style="min-width: 200px;">Ações de Gestão</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quote in quotes %}
+                    {% set client = get_user(quote.user_id) %}
+                    <tr>
+                        <td><strong>#{{ quote.id }}</strong></td>
+                        <td>
+                            {% if client %}
+                                <strong>{{ client.name }}</strong><br>
+                                <span style="font-size: 0.8rem; color: #666;">{{ client.email }}</span>
+                            {% else %}
+                                <span style="color: #999;">Usuário #{{ quote.user_id }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ quote.vehicle_model }}</strong>
+                            {% if quote.license_plate %}
+                                <br><span style="font-size: 0.8rem; color: #666;">Placa: {{ quote.license_plate }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ quote.service_type }}</td>
+                        <td style="max-width: 250px;">
+                            <div style="font-size: 0.88rem; color: #444;">{{ quote.description }}</div>
+                            {% if quote.image_path %}
+                                <span style="font-size: 0.75rem; color: #0288d1;">📷 {{ quote.image_path }}</span>
+                            {% endif %}
+                            {% if quote.admin_notes %}
+                                <div style="margin-top: 0.4rem; padding: 0.3rem 0.5rem; background: #e8f5e9; border-left: 3px solid #2e7d32; border-radius: 3px; font-size: 0.78rem; color: #1b5e20;">
+                                    💬 <strong>Resposta atual enviada:</strong> {{ quote.admin_notes }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ quote.status }}">
+                                {{ quote.status }}
+                            </span>
+                        </td>
+                        <td style="min-width: 240px;">
+                            <!-- Formulário de Devolutiva / Mudança de Status do Admin -->
+                            <form method="POST" action="{{ url_for('update_quote_status', quote_id=quote.id) }}" style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.4rem;">
+                                <div style="display: flex; gap: 0.3rem; align-items: center;">
+                                    <select name="status" class="form-select" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; width: auto;">
+                                        <option value="pendente" {% if quote.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                                        <option value="em_analise" {% if quote.status == 'em_analise' %}selected{% endif %}>Em Análise</option>
+                                        <option value="aprovado" {% if quote.status == 'aprovado' %}selected{% endif %}>Aprovar</option>
+                                        <option value="concluido" {% if quote.status == 'concluido' %}selected{% endif %}>Concluir</option>
+                                        <option value="cancelado" {% if quote.status == 'cancelado' %}selected{% endif %}>Cancelar</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
+                                        Devolver Orçamento
+                                    </button>
+                                </div>
+                                <div>
+                                    <input type="text" name="admin_notes" class="form-control" 
+                                           placeholder="Texto opcional para o cliente (ex: Orçamento R$ 350,00...)" 
+                                           value="{{ quote.admin_notes or '' }}"
+                                           style="font-size: 0.78rem; padding: 0.3rem 0.5rem;">
+                                </div>
+                            </form>
+
+                            {% if current_user and current_user.role == 'admin' %}
+                            <!-- Botão de Excluir do Admin -->
+                            <form method="POST" action="{{ url_for('delete_quote_action', quote_id=quote.id) }}" 
+                                  onsubmit="return confirm('Deseja realmente remover o orçamento #{{ quote.id }}?');" 
+                                  style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                                    Excluir
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p style="color: #666; padding: 2rem 1rem; text-align: center;">
+                Nenhum orçamento encontrado com o filtro selecionado.
+            </p>
+        {% endif %}
+    </div>
+
+{% else %}
+    <!-- ============================================================== -->
+    <!-- VISÃO CLIENTE                                                  -->
+    <!-- ============================================================== -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="font-size: 1.8rem; color: #111; margin-bottom: 0.2rem;">
+                Meus Orçamentos
+            </h2>
+            <p style="color: #666; font-size: 0.95rem;">
+                Olá, <strong>{{ current_user.name if current_user else 'Cliente' }}</strong>! Acompanhe o status das suas solicitações e serviços.
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('new_quote_page') }}" class="btn">
+                + Pedir Novo Orçamento
+            </a>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 1.5rem;">
+        {% if quotes %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th>Veículo</th>
+                        <th>Serviço Solicitado</th>
+                        <th>Descrição da Necessidade</th>
+                        <th>Status do Orçamento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quote in quotes %}
+                    <tr>
+                        <td><strong>#{{ quote.id }}</strong></td>
+                        <td>
+                            <strong>{{ quote.vehicle_model }}</strong>
+                            {% if quote.license_plate %}
+                                <br><span style="font-size: 0.8rem; color: #666;">Placa: {{ quote.license_plate }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ quote.service_type }}</td>
+                        <td style="max-width: 320px;">
+                            <div style="font-weight: 500;">{{ quote.description }}</div>
+                            {% if quote.image_path %}
+                                <div style="font-size: 0.75rem; color: #0288d1; margin-top: 0.2rem;">📷 {{ quote.image_path }}</div>
+                            {% endif %}
+
+                            {% if quote.admin_notes %}
+                                <div class="admin-feedback-box" style="margin-top: 0.6rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 0.6rem 0.8rem; border-radius: 6px;">
+                                    <div style="font-size: 0.82rem; font-weight: 700; color: #166534; display: flex; align-items: center; gap: 0.3rem;">
+                                        💬 Resposta da Oficina Fast-Car +:
+                                    </div>
+                                    <div style="font-size: 0.85rem; color: #15803d; margin-top: 0.25rem; font-weight: 500;">
+                                        {{ quote.admin_notes }}
+                                    </div>
+                                </div>
+                            {% elif quote.status == 'pendente' %}
+                                <div style="font-size: 0.78rem; color: #888; margin-top: 0.4rem;">
+                                    ⏳ Sua solicitação está na fila de triagem. A oficina enviará a resposta em breve.
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ quote.status }}">
+                                {% if quote.status == 'pendente' %}
+                                    ⏳ Aguardando Análise
+                                {% elif quote.status == 'em_analise' %}
+                                    🔍 Em Análise Técnica
+                                {% elif quote.status == 'aprovado' %}
+                                    ✓ Aprovado para Execução
+                                {% elif quote.status == 'concluido' %}
+                                    🎉 Serviço Concluído
+                                {% else %}
+                                    {{ quote.status }}
+                                {% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 2.5rem 1rem;">
+            <div style="font-size: 3rem; margin-bottom: 0.8rem;">📋</div>
+            <h3 style="color: #333; margin-bottom: 0.4rem;">Nenhum orçamento solicitado ainda</h3>
+            <p style="color: #666; max-width: 450px; margin: 0 auto 1.5rem auto;">
+                Você ainda não enviou solicitações. Peça agora mesmo um orçamento online para o seu veículo!
+            </p>
+            <a href="{{ url_for('new_quote_page') }}" class="btn">
+                + Pedir Meu Primeiro Orçamento
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <a href="{{ url_for('landing_page') }}" class="btn btn-secondary">
+            &larr; Voltar ao Início
+        </a>
+        <a href="{{ url_for('new_quote_page') }}" class="btn">
+            + Pedir Outro Orçamento
+        </a>
+    </div>
+
+{% endif %}
+
+{% endblock %}

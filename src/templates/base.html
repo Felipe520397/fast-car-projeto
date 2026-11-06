@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fast-Car + | Plataforma Automotiva e Clube VIP{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <header>
+        <div class="nav-wrapper">
+            <a href="{{ url_for('landing_page') }}" class="brand">
+                <h1>FAST-CAR<span class="plus">+</span></h1>
+                <span class="brand-tagline">Estética & Chaves</span>
+            </a>
+
+            <nav>
+                <a href="{{ url_for('landing_page') }}" class="nav-link">Início</a>
+                <a href="{{ url_for('services_page') }}" class="nav-link">Serviços</a>
+
+                {% if current_user %}
+                    {% if current_user.role in ['admin', 'funcionario'] %}
+                        <a href="{{ url_for('list_quotes') }}" class="nav-link">
+                            🛡️ Gestão de Orçamentos
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('list_quotes') }}" class="nav-link">Meus Orçamentos</a>
+                        <a href="{{ url_for('new_quote_page') }}" class="btn btn-sm">
+                            + Pedir Orçamento
+                        </a>
+                    {% endif %}
+
+                    <span class="user-badge {{ current_user.role }}">
+                        {% if current_user.role == 'admin' %}
+                            🛡️ {{ current_user.name }} (Admin)
+                        {% elif current_user.role == 'funcionario' %}
+                            🔧 {{ current_user.name }} (Equipe)
+                        {% else %}
+                            👤 {{ current_user.name }}
+                        {% endif %}
+                    </span>
+                    <a href="{{ url_for('logout_action') }}" class="btn btn-sm btn-outline-light">Sair</a>
+
+                {% else %}
+                    <a href="{{ url_for('new_quote_page') }}" class="btn btn-sm">
+                        + Pedir Orçamento
+                    </a>
+                    <a href="{{ url_for('login_page') }}" class="btn btn-sm btn-secondary">
+                        Entrar / Login
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-wrapper">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {% if category == 'success' %}✓ {% elif category == 'danger' or category == 'error' %}⚠️ {% else %}ℹ️ {% endif %}
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2026 Fast-Car + · Soluções Eletroeletrônicas, Chaves Smart Key e Estética Automotiva.</p>
+            <p style="margin-top: 0.3rem; font-size: 0.8rem; color: #777;">
+                Ambiente de Demonstração e Avaliação · RBAC e Multi-Tenancy Ativos
+            </p>
+        </div>
+    </footer>
+
+</body>
+</html>
