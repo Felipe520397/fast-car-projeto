@@ -5,7 +5,8 @@ services:
     build: .
     container_name: fast-car-web
     ports:
-      - "8204:5001"
+      - "8204:8204"
     environment:
+      - PORT=8204
       - SECRET_KEY=fastcar_secret_key_2026
     restart: unless-stopped

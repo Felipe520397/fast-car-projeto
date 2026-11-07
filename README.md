@@ -137,4 +137,4 @@ flowchart TD
 # Ativar o ambiente virtual e executar
 .\.venv\Scripts\python.exe src/app.py
 ```
-Acesse `http://localhost:5001` no navegador.
+Acesse `http://localhost:8204` no navegador.
