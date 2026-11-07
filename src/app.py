@@ -302,4 +302,5 @@ def api_delete_quote(quote_id):
     return jsonify({"message": f"Orçamento {quote_id} removido com sucesso"}), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    port = int(os.getenv("PORT", 5001))
+    app.run(host='0.0.0.0', port=port, debug=True)
