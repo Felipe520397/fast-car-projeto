@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Fast-Car + | Planos e Assinatura Clube VIP{% endblock %}
+
+{% block content %}
+<div style="max-width: 960px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <h2 style="font-size: 2.2rem; color: #111; margin-bottom: 0.5rem;">
+            Escolha o Plano Ideal para o Seu Veículo
+        </h2>
+        <p style="color: #666; font-size: 1.05rem; max-width: 650px; margin: 0 auto;">
+            Tenha orçamentos ilimitados, descontos fixos e benefícios mensais de estética e manutenção preventiva.
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2.5rem;">
+        
+        <!-- PLANO FREE -->
+        <div class="card" style="border: 2px solid {% if current_user and current_user.plan == 'free' %}#0288d1{% else %}#e9ecef{% endif %}; position: relative; display: flex; flex-direction: column; justify-content: space-between;">
+            {% if current_user and current_user.plan == 'free' %}
+                <span style="position: absolute; top: -12px; right: 20px; background: #0288d1; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 12px; text-transform: uppercase;">
+                    Seu Plano Atual
+                </span>
+            {% endif %}
+            
+            <div>
+                <h3 style="font-size: 1.5rem; color: #111; margin-bottom: 0.5rem;">Plano Free</h3>
+                <p style="color: #666; font-size: 0.9rem; margin-bottom: 1.5rem;">Para quem precisa de diagnósticos eventuais sem mensalidade.</p>
+                
+                <div style="font-size: 2.2rem; font-weight: 800; color: #111; margin-bottom: 1.5rem;">
+                    R$ 0<span style="font-size: 1rem; color: #777; font-weight: normal;">/mês</span>
+                </div>
+
+                <ul style="list-style: none; padding: 0; margin-bottom: 2rem; color: #444; font-size: 0.95rem; line-height: 2;">
+                    <li>✓ <strong>Limite de 3 orçamentos</strong> na plataforma</li>
+                    <li>✓ Acesso ao catálogo de serviços</li>
+                    <li>✓ Devolutivas técnicas da oficina</li>
+                    <li style="color: #999;">✕ Sem higienização de ar-condicionado mensal</li>
+                    <li style="color: #999;">✕ Sem desconto fixo em peças e serviços</li>
+                    <li style="color: #999;">✕ Fila de atendimento padrão</li>
+                </ul>
+            </div>
+
+            <div>
+                {% if current_user and current_user.plan == 'free' %}
+                    <button class="btn btn-outline" style="width: 100%;" disabled>
+                        Plano Ativo (Free)
+                    </button>
+                {% else %}
+                    <a href="{{ url_for('list_quotes') }}" class="btn btn-outline" style="width: 100%;">
+                        Plano Básico
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- PLANO PRO / CLUBE VIP -->
+        <div class="card" style="border: 2px solid var(--primary); box-shadow: 0 8px 24px rgba(229, 9, 20, 0.15); position: relative; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(180deg, #ffffff 0%, #fffbfb 100%);">
+            <span style="position: absolute; top: -12px; right: 20px; background: var(--primary); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 12px; text-transform: uppercase;">
+                Recomendado · Clube VIP
+            </span>
+
+            <div>
+                <h3 style="font-size: 1.5rem; color: #111; margin-bottom: 0.5rem;">Clube VIP (Pro)</h3>
+                <p style="color: #666; font-size: 0.9rem; margin-bottom: 1.5rem;">Cuidado premium, economia garantida e prioridade máxima.</p>
+                
+                <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary); margin-bottom: 1.5rem;">
+                    R$ 49,90<span style="font-size: 1rem; color: #777; font-weight: normal;">/mês</span>
+                </div>
+
+                <ul style="list-style: none; padding: 0; margin-bottom: 2rem; color: #333; font-size: 0.95rem; line-height: 2;">
+                    <li>✓ 🚀 <strong>Orçamentos Ilimitados</strong> (sem limite de 3)</li>
+                    <li>✓ 💎 <strong>1 Higienização de Ar-Condicionado (Granada) por mês inclusa</strong> (R$ 90 avulsa)</li>
+                    <li>✓ 🏷️ <strong>5% de Desconto Fixo</strong> em qualquer produto/serviço</li>
+                    <li>✓ ⚡ <strong>Atendimento Prioritário</strong> em resgates e emergências</li>
+                    <li>✓ 🔑 Descontos especiais na cópia de chave Smart Key</li>
+                    <li>✓ 🔄 Cancele ou altere quando quiser pelo portal do cliente</li>
+                </ul>
+            </div>
+
+            <div>
+                {% if current_user and current_user.plan == 'pro' and current_user.subscription_status == 'active' %}
+                    <form method="POST" action="{{ url_for('create_portal_session') }}">
+                        <button type="submit" class="btn btn-secondary" style="width: 100%; padding: 0.8rem;">
+                            ⚙️ Gerenciar Assinatura (Portal Stripe)
+                        </button>
+                    </form>
+                    <div style="font-size: 0.8rem; color: #2e7d32; text-align: center; margin-top: 0.5rem; font-weight: 600;">
+                        ✓ Assinatura Pro Ativa
+                    </div>
+                {% elif current_user %}
+                    <form method="POST" action="{{ url_for('create_checkout_session') }}">
+                        <button type="submit" class="btn" style="width: 100%; padding: 0.85rem; font-size: 1.05rem;">
+                            Assinar Clube VIP com Stripe (R$ 49,90)
+                        </button>
+                    </form>
+                    <div style="font-size: 0.78rem; color: #777; text-align: center; margin-top: 0.5rem;">
+                        💳 Modo de Teste Seguro · Cancelamento a qualquer momento
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('login_page', next=url_for('subscribe_page')) }}" class="btn" style="width: 100%; padding: 0.85rem;">
+                        Entrar para Assinar
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BOX DE AJUDA PARA TESTES DO AVALIADOR -->
+    <div class="card" style="background: #f8f9fa; border-left: 4px solid #0288d1;">
+        <h4 style="margin-top: 0; color: #01579b; font-size: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+            ℹ️ Instruções para Avaliação com Cartão de Teste do Stripe
+        </h4>
+        <p style="font-size: 0.88rem; color: #555; margin-bottom: 0.5rem;">
+            Conforme a especificação do trabalho, o checkout roda no <strong>Modo de Teste do Stripe</strong> (sem cobrança real).
+        </p>
+        <ul style="font-size: 0.85rem; color: #444; line-height: 1.8; margin-left: 1.2rem;">
+            <li><strong>Número do Cartão:</strong> <code>4242 4242 4242 4242</code></li>
+            <li><strong>Validade:</strong> Qualquer data futura (ex: <code>12/28</code>)</li>
+            <li><strong>CVC:</strong> Qualquer 3 dígitos (ex: <code>123</code>)</li>
+            <li><strong>Ativação do Plano:</strong> A ativação para Pro ocorre quando o <strong>Webhook</strong> do Stripe (<code>checkout.session.completed</code>) chega ao servidor e atualiza o banco de dados.</li>
+            <li><strong>Cancelamento / Downgrade:</strong> Pode ser feito a qualquer hora clicando em <em>"Gerenciar Assinatura"</em>, que abre o Stripe Customer Portal. O webhook <code>customer.subscription.deleted</code> devolverá o usuário para o Free automaticamente.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -66,9 +66,15 @@
 
             <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end; align-items: center;">
                 <a href="{{ url_for('list_quotes') }}" class="btn btn-outline">Cancelar</a>
-                <button type="submit" class="btn">
-                    ✓ Enviar Solicitação de Orçamento
-                </button>
+                {% if can_create_quote %}
+                    <button type="submit" class="btn">
+                        ✓ Enviar Solicitação de Orçamento
+                    </button>
+                {% else %}
+                    <a href="{{ url_for('subscribe_page') }}" class="btn" style="background: var(--primary);">
+                        ⭐ Fazer Upgrade para o Clube VIP
+                    </a>
+                {% endif %}
             </div>
         </form>
     </div>

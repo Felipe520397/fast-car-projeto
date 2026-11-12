@@ -24,13 +24,36 @@
             </p>
         </div>
         <div style="display: flex; gap: 0.5rem;">
+            <a href="{{ url_for('admin_saas_metrics') }}" class="btn btn-secondary">
+                📊 Métricas SaaS & MRR
+            </a>
             <a href="{{ url_for('new_quote_page') }}" class="btn">
                 + Novo Orçamento
             </a>
         </div>
     </div>
 
-    <!-- Cards de Métricas e Resumo -->
+    <!-- BANNER SAAS ADMIN COM MRR E ASSINATURAS ATIVAS (REQUISITO 6) -->
+    {% if saas_metrics %}
+    <div style="background: linear-gradient(135deg, #111 0%, #1e1e1e 100%); color: #fff; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; border-left: 5px solid #2e7d32; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <span style="font-size: 0.75rem; text-transform: uppercase; color: #aaa; letter-spacing: 1px;">Métricas SaaS Stripe</span>
+            <div style="font-size: 1.3rem; font-weight: 800; color: #a5d6a7; margin-top: 0.2rem;">
+                MRR de Teste: R$ {{ "%.2f"|format(saas_metrics.mrr) }}
+            </div>
+            <div style="font-size: 0.85rem; color: #ddd; margin-top: 0.2rem;">
+                {{ saas_metrics.active_subs_count }} assinaturas ativas · {{ saas_metrics.pro_count }} usuários Pro · {{ saas_metrics.free_count }} usuários Free
+            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('admin_saas_metrics') }}" class="btn btn-sm btn-outline-light">
+                Ver Relatório SaaS Completo &rarr;
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Cards de Métricas de Orçamentos -->
     <div class="stats-grid">
         <div class="stat-box">
             <div class="stat-number">{{ quotes|length }}</div>
@@ -81,12 +104,12 @@
                 <thead>
                     <tr>
                         <th style="width: 50px;">ID</th>
-                        <th>Cliente</th>
+                        <th>Cliente / Plano</th>
                         <th>Veículo</th>
                         <th>Serviço</th>
                         <th>Descrição</th>
                         <th>Status Atual</th>
-                        <th style="min-width: 200px;">Ações de Gestão</th>
+                        <th style="min-width: 240px;">Ações de Gestão</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -97,7 +120,12 @@
                         <td>
                             {% if client %}
                                 <strong>{{ client.name }}</strong><br>
-                                <span style="font-size: 0.8rem; color: #666;">{{ client.email }}</span>
+                                <span style="font-size: 0.8rem; color: #666;">{{ client.email }}</span><br>
+                                {% if client.plan == 'pro' %}
+                                    <span class="plan-badge pro" style="font-size: 0.68rem; margin-top: 0.2rem;">⭐ PRO</span>
+                                {% else %}
+                                    <span class="plan-badge free" style="font-size: 0.68rem; margin-top: 0.2rem;">FREE</span>
+                                {% endif %}
                             {% else %}
                                 <span style="color: #999;">Usuário #{{ quote.user_id }}</span>
                             {% endif %}
@@ -116,7 +144,7 @@
                             {% endif %}
                             {% if quote.admin_notes %}
                                 <div style="margin-top: 0.4rem; padding: 0.3rem 0.5rem; background: #e8f5e9; border-left: 3px solid #2e7d32; border-radius: 3px; font-size: 0.78rem; color: #1b5e20;">
-                                    💬 <strong>Resposta atual enviada:</strong> {{ quote.admin_notes }}
+                                    💬 <strong>Resposta atual:</strong> {{ quote.admin_notes }}
                                 </div>
                             {% endif %}
                         </td>
@@ -137,7 +165,7 @@
                                         <option value="cancelado" {% if quote.status == 'cancelado' %}selected{% endif %}>Cancelar</option>
                                     </select>
                                     <button type="submit" class="btn btn-sm" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
-                                        Devolver Orçamento
+                                        Devolver
                                     </button>
                                 </div>
                                 <div>
@@ -173,7 +201,7 @@
 
 {% else %}
     <!-- ============================================================== -->
-    <!-- VISÃO CLIENTE                                                  -->
+    <!-- VISÃO CLIENTE COM LIMITES SAAS                                  -->
     <!-- ============================================================== -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
@@ -185,11 +213,58 @@
             </p>
         </div>
         <div>
-            <a href="{{ url_for('new_quote_page') }}" class="btn">
-                + Pedir Novo Orçamento
-            </a>
+            {% if can_create_quote %}
+                <a href="{{ url_for('new_quote_page') }}" class="btn">
+                    + Pedir Novo Orçamento
+                </a>
+            {% else %}
+                <a href="{{ url_for('subscribe_page') }}" class="btn" style="background-color: var(--primary);">
+                    ⭐ Assinar Clube VIP Pro
+                </a>
+            {% endif %}
         </div>
     </div>
+
+    <!-- BANNER DE STATUS DO PLANO E LIMITES (REQUISITO 5) -->
+    {% if current_user and current_user.plan == 'pro' and current_user.subscription_status == 'active' %}
+        <div style="background: linear-gradient(135deg, #fffde7 0%, #fff8e1 100%); border: 1px solid #ffe082; border-left: 4px solid #ffb300; padding: 0.85rem 1.25rem; border-radius: 6px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <strong style="color: #b78103; font-size: 0.95rem;">⭐ Assinante Clube VIP (Plano Pro Ativo)</strong>
+                <div style="color: #555; font-size: 0.85rem; margin-top: 0.2rem;">
+                    Você possui solicitações de orçamento ilimitadas, 1 higienização de ar-condicionado mensal inclusa e 5% de desconto fixo.
+                </div>
+            </div>
+            {% if current_user.stripe_customer_id %}
+            <form method="POST" action="{{ url_for('create_portal_session') }}">
+                <button type="submit" class="btn btn-sm btn-secondary" title="Abrir Stripe Customer Portal para trocar de plano ou cancelar">
+                    ⚙️ Gerenciar Assinatura
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    {% else %}
+        <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid {% if can_create_quote %}#0288d1{% else %}#d32f2f{% endif %}; padding: 0.85rem 1.25rem; border-radius: 6px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <strong style="color: #333; font-size: 0.95rem;">
+                    Plano Free: {{ user_quote_count }} de {{ quote_limit }} orçamentos utilizados
+                </strong>
+                {% if not can_create_quote %}
+                    <div style="color: #d32f2f; font-size: 0.85rem; margin-top: 0.25rem; font-weight: 600;">
+                        ⚠️ Limite do plano Free atingido. Para abrir novos orçamentos, assine o Clube VIP (Plano Pro).
+                    </div>
+                {% else %}
+                    <div style="color: #666; font-size: 0.82rem; margin-top: 0.2rem;">
+                        Você ainda possui {{ quote_limit - user_quote_count }} orçamento(s) gratuito(s) restante(s).
+                    </div>
+                {% endif %}
+            </div>
+            <div>
+                <a href="{{ url_for('subscribe_page') }}" class="btn btn-sm" style="background-color: var(--primary);">
+                    ⭐ Assinar Clube VIP (R$ 49,90/mês)
+                </a>
+            </div>
+        </div>
+    {% endif %}
 
     <div class="card" style="padding: 1.5rem;">
         {% if quotes %}
@@ -263,9 +338,15 @@
             <p style="color: #666; max-width: 450px; margin: 0 auto 1.5rem auto;">
                 Você ainda não enviou solicitações. Peça agora mesmo um orçamento online para o seu veículo!
             </p>
-            <a href="{{ url_for('new_quote_page') }}" class="btn">
-                + Pedir Meu Primeiro Orçamento
-            </a>
+            {% if can_create_quote %}
+                <a href="{{ url_for('new_quote_page') }}" class="btn">
+                    + Pedir Meu Primeiro Orçamento
+                </a>
+            {% else %}
+                <a href="{{ url_for('subscribe_page') }}" class="btn" style="background-color: var(--primary);">
+                    ⭐ Assinar Clube VIP Pro
+                </a>
+            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -274,9 +355,15 @@
         <a href="{{ url_for('landing_page') }}" class="btn btn-secondary">
             &larr; Voltar ao Início
         </a>
-        <a href="{{ url_for('new_quote_page') }}" class="btn">
-            + Pedir Outro Orçamento
-        </a>
+        {% if can_create_quote %}
+            <a href="{{ url_for('new_quote_page') }}" class="btn">
+                + Pedir Outro Orçamento
+            </a>
+        {% else %}
+            <a href="{{ url_for('subscribe_page') }}" class="btn" style="background-color: var(--primary);">
+                ⭐ Liberar Orçamentos Ilimitados (Clube VIP)
+            </a>
+        {% endif %}
     </div>
 
 {% endif %}

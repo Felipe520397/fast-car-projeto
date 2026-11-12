@@ -140,6 +140,29 @@ nav a.nav-link:hover {
     color: #fff;
 }
 
+.plan-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.plan-badge.pro {
+    background: linear-gradient(135deg, #ffd700 0%, #ff8f00 100%);
+    color: #111;
+    border: 1px solid #ffe082;
+    box-shadow: 0 2px 6px rgba(255, 160, 0, 0.3);
+}
+.plan-badge.free {
+    background: #37474f;
+    color: #eceff1;
+    border: 1px solid #546e7a;
+}
+
 /* ----------------- BOTÕES ----------------- */
 .btn {
     display: inline-flex;

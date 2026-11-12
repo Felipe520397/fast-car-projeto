@@ -18,17 +18,48 @@
             <nav>
                 <a href="{{ url_for('landing_page') }}" class="nav-link">Início</a>
                 <a href="{{ url_for('services_page') }}" class="nav-link">Serviços</a>
+                <a href="{{ url_for('subscribe_page') }}" class="nav-link">Planos VIP</a>
 
                 {% if current_user %}
                     {% if current_user.role in ['admin', 'funcionario'] %}
                         <a href="{{ url_for('list_quotes') }}" class="nav-link">
-                            🛡️ Gestão de Orçamentos
+                            🛡️ Orçamentos
+                        </a>
+                        <a href="{{ url_for('admin_saas_metrics') }}" class="nav-link" style="color: #ffd54f;">
+                            📊 Painel SaaS / MRR
                         </a>
                     {% else %}
                         <a href="{{ url_for('list_quotes') }}" class="nav-link">Meus Orçamentos</a>
-                        <a href="{{ url_for('new_quote_page') }}" class="btn btn-sm">
-                            + Pedir Orçamento
-                        </a>
+                        {% if can_create_quote %}
+                            <a href="{{ url_for('new_quote_page') }}" class="btn btn-sm">
+                                + Pedir Orçamento
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('subscribe_page') }}" class="btn btn-sm" style="background-color: #ff9800;">
+                                ⭐ Upgrade VIP
+                            </a>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- BADGE DO PLANO SAAS -->
+                    {% if current_user.role == 'cliente' %}
+                        {% if current_user.plan == 'pro' and current_user.subscription_status == 'active' %}
+                            <span class="plan-badge pro" title="Assinante do Clube VIP (Orçamentos ilimitados)">
+                                ⭐ CLUBE VIP
+                            </span>
+                            <form method="POST" action="{{ url_for('create_portal_session') }}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-light" title="Abrir Billing Portal do Stripe para gerenciar ou cancelar assinatura">
+                                    ⚙️ Portal
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="plan-badge free" title="Plano Free: limite de {{ quote_limit }} orçamentos">
+                                FREE ({{ user_quote_count }}/{{ quote_limit }})
+                            </span>
+                            <a href="{{ url_for('subscribe_page') }}" class="btn btn-sm" style="background: #e65100; font-size: 0.8rem; padding: 0.25rem 0.6rem;">
+                                Assinar Pro
+                            </a>
+                        {% endif %}
                     {% endif %}
 
                     <span class="user-badge {{ current_user.role }}">
@@ -46,8 +77,11 @@
                     <a href="{{ url_for('new_quote_page') }}" class="btn btn-sm">
                         + Pedir Orçamento
                     </a>
+                    <a href="{{ url_for('register_page') }}" class="nav-link" style="color: #fff;">
+                        Cadastrar
+                    </a>
                     <a href="{{ url_for('login_page') }}" class="btn btn-sm btn-secondary">
-                        Entrar / Login
+                        Entrar
                     </a>
                 {% endif %}
             </nav>
@@ -60,7 +94,7 @@
                 <div class="flash-container">
                     {% for category, message in messages %}
                         <div class="alert alert-{{ category }}">
-                            {% if category == 'success' %}✓ {% elif category == 'danger' or category == 'error' %}⚠️ {% else %}ℹ️ {% endif %}
+                            {% if category == 'success' %}✓ {% elif category == 'danger' or category == 'error' %}⚠️ {% elif category == 'warning' %}🔔 {% else %}ℹ️ {% endif %}
                             {{ message }}
                         </div>
                     {% endfor %}
@@ -75,8 +109,8 @@
     <footer>
         <div class="footer-content">
             <p>&copy; 2026 Fast-Car + · Soluções Eletroeletrônicas, Chaves Smart Key e Estética Automotiva.</p>
-            <p style="margin-top: 0.3rem; font-size: 0.8rem; color: #777;">
-                Ambiente de Demonstração e Avaliação · RBAC e Multi-Tenancy Ativos
+            <p style="margin-top: 0.3rem; font-size: 0.8rem; color: #888;">
+                SaaS com Stripe Subscriptions & Webhooks · Desenvolvido para a disciplina do Prof. <a href="https://github.com/siriani" target="_blank" rel="noopener">Siriani</a>
             </p>
         </div>
     </footer>

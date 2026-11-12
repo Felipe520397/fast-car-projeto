@@ -1,156 +1,136 @@
-# Documentação Técnica e Arquitetural — Fast-Car +
+# Documentação Técnica e Arquitetural — Fast-Car + (SaaS Completo)
 
-Este documento detalha a arquitetura, as regras de negócio, o modelo de dados, o controle de acessos (RBAC), o fluxo de orçamentos e a especificação funcional do sistema **Fast-Car +**.
+Este documento detalha a arquitetura, o modelo de assinaturas com Stripe Billing, a validação de webhooks, os limites por plano, as regras de negócio e a especificação técnica do sistema **Fast-Car +**.
+
+> **Professor Responsável:** [github.com/siriani](https://github.com/siriani)  
+> **Entrega:** Sexta-feira, 13/11/2026
 
 ---
 
-## 1. Especificação Funcional do Sistema
+## 1. Especificação Funcional do Sistema SaaS
 
 Do ponto de vista do usuário e do negócio, a plataforma oferece:
 - **Landing Page Pública:** Apresentação da proposta de valor, catálogo de serviços, benefícios do clube VIP e atalhos diretos para orçamento e login.
-- **Autenticação e RBAC (`/login` e `/logout`):** Sistema de login com separação de papéis (`admin`, `funcionario`, `cliente`) e atalhos rápidos de demonstração (1-clique).
-- **Catálogo de Serviços (`/services`):** Listagem de serviços automotivos com atalhos para solicitar orçamento específico (som, alarmes, iluminação LED, insulfilm e chaves presenciais).
-- **Abertura de Orçamentos pelo Cliente (`/quotes/new`):** Envio de solicitações de orçamento com dados do veículo, tipo de serviço, descrição detalhada e fotos.
-- **Painel do Cliente (`/quotes`):** Visualização estritamente isolada dos próprios orçamentos (Multi-Tenancy) com status em tempo real, respostas da oficina e botão "+ Pedir Novo Orçamento".
-- **Painel Administrativo do Dono (`/quotes`):** Visualização completa de todas as solicitações da oficina, métricas (pendentes, em análise, aprovados), filtros por status e ferramentas de devolução de orçamento com texto opcional ao cliente.
-- **Devolutiva com Parecer Técnico Opcional:** O administrador/técnico pode inserir uma mensagem explicativa (ex: valor estimado, prazo, observações de peças) ao mudar o status, que é exibida em destaque no painel do cliente.
-- **Clube VIP (Stripe):** Assinatura recorrente para obtenção de descontos e prioridade de atendimento.
+- **Autenticação, Cadastro e RBAC (`/login`, `/register`, `/logout`):** Sistema com separação de papéis (`admin`, `funcionario`, `cliente`) e cadastro de novos clientes que nascem obrigatoriamente no **Plano Free**.
+- **Planos e Assinatura Recorrente (`/subscribe`):** Comparativo transparente entre Free (R$ 0,00) e Clube VIP Pro (R$ 49,90/mês), com Checkout Session hospedada no Stripe (`mode="subscription"`).
+- **Enforcement de Limites por Plano (Multi-Tenancy):**
+  - **Free:** Máximo de 3 orçamentos por conta.
+  - **Pro:** Orçamentos ilimitados.
+  - O limite é validado no backend tanto na Web (`POST /quotes/new`) quanto na API REST (`POST /api/quotes` com status 403 Forbidden).
+- **Portal do Cliente (Stripe Billing Portal):** Botão "Gerenciar Assinatura" que permite ao cliente alterar forma de pagamento, trocar de plano ou cancelar de forma autônoma.
+- **Webhooks Seguros e Idempotentes (`POST /webhook`):** Processamento dos 4 eventos essenciais do ciclo de vida da assinatura com validação de assinatura e garantia de não-duplicação de efeitos.
+- **Painel Administrativo SaaS (`/admin/saas`):** Painel exclusivo para o administrador com MRR de teste ($$MRR = \text{Assinaturas Ativas} \times R\$\;49,90$$), usuários por plano, assinaturas ativas e histórico auditável dos últimos eventos.
 
 ---
 
-## 2. Personas e Proposta de Valor
-
-### Personas
-- **Marcos (Cliente):** 32 anos, autônomo, proprietário de uma *Toyota Hilux SW4*. Precisa de manutenção rápida, chave inteligente e não pode perder tempo indo à oficina só para pedir preço.
-- **Dono Fast-Car (Administrador):** 44 anos, gestor técnico da oficina. Precisa de visão centralizada, gestão de prazos, triagem de serviços e receita recorrente previsível com o Clube VIP.
-
-### Proposta de Valor
-A **Fast-Car +** conecta proprietários de veículos à oficina através de um sistema de triagem online sem filas, garagem virtual e Clube VIP por assinatura que garante benefícios mensais e prioridade de resgate.
-
----
-
-## 3. Planeamento do Modelo SaaS e Níveis de Serviço
-
-### Estrutura de Níveis de Serviço (Tiers)
-
-| Nível / Plano | Mensalidade | Benefícios Inclusos |
-| :--- | :---: | :--- |
-| **Plano Free** | R$ 0,00 | Orçamentos ilimitados, catálogo de serviços, acompanhamento de status e devolução técnica na plataforma. |
-| **Plano Clube VIP** | R$ 49,90/mês | Todos os recursos do Free + **1 Higienização de Ar-Condicionado (Granada) mensal inclusa**, **5% de desconto fixo** em qualquer produto/serviço da oficina e **atendimento prioritário na fila de socorro/oficina**. |
-
----
-
-## 4. Desenho do Fluxo de Orçamentos
+## 2. Diagrama de Sequência: Ciclo de Vida da Assinatura
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Cliente as 👤 Cliente (Marcos)
-    participant Web as 🌐 Interface Web / Flask
-    participant DB as 🗄️ Base de Dados (quotes)
-    actor Admin as 🛡️ Dono Fast-Car (Admin)
+    participant Web as 🌐 App Fast-Car +
+    participant Stripe as 💳 Stripe Billing & Checkout
+    participant DB as 🗄️ Banco de Dados
 
-    Cliente->>Web: Preenche solicitação de orçamento (POST /quotes/new)
-    Web->>DB: Salva com status 'pendente'
-    DB-->>Web: Confirmação (#ID)
-    Web-->>Cliente: Exibe confirmação e lista em 'Meus Orçamentos'
+    Cliente->>Web: Clica em "Assinar Clube VIP" (POST /create-checkout-session)
+    Web->>Stripe: Cria Checkout Session (mode=subscription, price=R$ 49,90)
+    Stripe-->>Web: Retorna URL da sessão
+    Web-->>Cliente: Redireciona para o Stripe Checkout
+
+    Cliente->>Stripe: Preenche cartão de teste (4242 4242...) e confirma
+    Stripe-->>Cliente: Redireciona para /subscription/success (aviso de processamento)
     
-    Admin->>Web: Acessa Painel de Gestão (GET /quotes)
-    Web->>DB: Busca todos os orçamentos com dados dos clientes
-    DB-->>Web: Retorna lista completa
-    Web-->>Admin: Apresenta cards de métricas e tabela de pedidos
+    Note over Stripe,Web: O plano NÃO muda no redirect do navegador!
+    
+    Stripe->>Web: Dispara Webhook: checkout.session.completed (com assinatura)
+    Web->>Web: Valida assinatura (stripe.Webhook.construct_event) e idempotência
+    Web->>DB: Atualiza usuário: plan='pro', subscription_status='active', customer_id, sub_id
+    Web->>DB: Grava log de auditoria do evento
+    Web-->>Stripe: Retorna 200 OK
 
-    Admin->>Web: Atualiza status ('em_analise' / 'aprovado') + Mensagem Opcional
-    Web->>DB: Salva novo status e 'admin_notes'
-    DB-->>Web: Registro atualizado
+    Cliente->>Web: Solicita orçamentos além do limite de 3
+    Web->>DB: Consulta plano atual do usuário a cada requisição
+    DB-->>Web: Usuário é Pro / active
+    Web-->>Cliente: Orçamento criado com sucesso (Sem restrições)
 
-    Cliente->>Web: Acessa 'Meus Orçamentos'
-    Web->>DB: Busca orçamentos isolados (user_id = Cliente)
-    Web-->>Cliente: Exibe status atualizado e balão com o parecer técnico da oficina
+    Cliente->>Web: Clica em "Gerenciar Assinatura" (POST /create-portal-session)
+    Web->>Stripe: Cria sessão do Billing Portal
+    Stripe-->>Cliente: Apresenta tela para cancelamento autônomo
+    Cliente->>Stripe: Confirma cancelamento da assinatura
+
+    Stripe->>Web: Dispara Webhook: customer.subscription.deleted
+    Web->>DB: Atualiza usuário: plan='free', subscription_status='canceled'
+    Web->>DB: Grava log de auditoria de cancelamento
+    Web-->>Stripe: Retorna 200 OK
 ```
 
 ---
 
-## 5. Lean Canvas
+## 3. Os Quatro Eventos de Webhook Tratados
 
-| Bloco | Conteúdo |
-| :--- | :--- |
-| **Problema** | Perda de tempo com orçamentos presenciais, falta de transparência em serviços elétricos/chaves e custos imprevisíveis. |
-| **Segmento de Clientes** | Proprietários de veículos que buscam customização, eletrônica embarcada e manutenção estética. |
-| **Proposta Única de Valor** | Orçamento inteligente com triagem online sem filas e Clube VIP com higienização mensal e descontos garantidos. |
-| **Solução** | 1. Triagem remota com devolutiva técnica. 2. Gestão com RBAC e Multi-Tenancy. 3. Clube VIP por assinatura Stripe. |
-| **Canais** | Redes sociais (Instagram), indicação no balcão e QR Code presencial na oficina. |
-| **Fontes de Receita** | Execução de serviços automotivos e mensalidades do Clube VIP (R$ 49,90/mês no Stripe). |
-| **Estrutura de Custos** | Hospedagem de infraestrutura (Portainer/Docker), insumos de higienização, taxas Stripe e equipe técnica. |
-| **Métricas-Chave** | Assinantes VIP ativos, MRR, volume de orçamentos gerados, taxa de conversão em serviços. |
-| **Vantagem Injusta** | Loja física já consolidada, ferramental de ponta em OBD2/Smart Key e equipe técnica qualificada. |
-
----
-
-## 6. Mapa de Reaproveitamento
-
-| Componente do Projeto Base | O que se tornou no SaaS Fast-Car + |
-| :--- | :--- |
-| **Catálogo de Filmes (TMDB)** | Catálogo de Serviços Automotivos (Chaves Smart Key, Som, Painéis Digitais, LED, Insulfilm) |
-| **Microsserviço de Login + RBAC** | Níveis de acesso: `admin` (Dono), `funcionario` (Instalador) e `cliente` |
-| **Logs e Auditoria (Redis)** | Eventos de Negócio: criação de orçamento, atualização de status e devoluções técnicas |
-| **Upload e Perfil (MinIO)** | Armazenamento de fotos de veículos, chaves presenciais e ordens de serviço |
-| **Plano Premium (Stripe)** | Assinatura mensal do Clube VIP Fast-Car + (R$ 49,90/mês) |
-| **Deploy e Observabilidade** | Deploy automatizado com Docker Compose no Portainer |
-
----
-
-## 7. Classificação da Infraestrutura (SaaS, PaaS, IaaS)
-
-| Camada | Componente / Serviço | Justificativa |
+| Evento | Condição de Disparo | Ação Executada no Banco de Dados |
 | :--- | :--- | :--- |
-| **IaaS** | Máquina Virtual (Ubuntu / Proxmox) | Gerenciamos sistema operacional, conectividade, segurança de rede e volumes de persistência. |
-| **PaaS** | Containers Docker no Portainer | Plataforma de execução onde rodam a aplicação Flask, banco MariaDB, Redis e MinIO sem gestão manual do SO host. |
-| **SaaS** | Stripe API | Serviço pronto de pagamentos e cobrança recorrente consumido diretamente via API externa. |
+| `checkout.session.completed` | Checkout de assinatura concluído com sucesso | Associa `stripe_customer_id` e `stripe_subscription_id`, atualiza `plan = 'pro'` e `subscription_status = 'active'`. Registra auditoria. |
+| `customer.subscription.updated` | Troca de plano, renovação ou alteração de status | Atualiza `subscription_status`. Se `active`, mantém `pro`. Se `past_due`, marca inadimplente e reverte privilégios Pro. |
+| `customer.subscription.deleted` | Cancelamento da assinatura pelo cliente ou oficina | Reverte `plan = 'free'`, marca `subscription_status = 'canceled'` e reativa a cota máxima de 3 orçamentos. |
+| `invoice.payment_failed` | Falha na cobrança mensal de renovação | Marca `subscription_status = 'past_due'` e suspende os benefícios Pro (o Pro não continua de graça). |
 
 ---
 
-## 8. Arquitetura de Software e Rotas Implementadas
+## 4. Estrutura de Níveis de Serviço (Tiers)
 
-### Rotas Web e REST API
+| Recurso / Benefício | Plano Free (R$ 0,00) | Clube VIP Pro (R$ 49,90/mês) |
+| :--- | :---: | :---: |
+| **Limite de Orçamentos** | Máximo de 3 solicitações | **Ilimitado** |
+| **Higienização de Ar-Condicionado (Granada)** | Não inclusa (R$ 90 avulsa) | **1 por mês inclusa** |
+| **Desconto em Serviços e Peças** | Valor padrão de tabela | **5% de desconto fixo** |
+| **Atendimento de Socorro / Resgate** | Fila convencional | **Prioridade máxima VIP** |
+| **Customer Portal do Stripe** | Não aplicável | **Disponível para troca/cancelamento** |
+
+---
+
+## 5. Rotas Web e REST API Implementadas
 
 | Rota | Método | Papel Mínimo | Descrição |
 | :--- | :---: | :---: | :--- |
 | `/` | GET | Público | Landing Page com proposta de valor e CTAs |
 | `/services` | GET | Público | Catálogo de serviços com atalhos para orçamento |
-| `/login` | GET / POST | Público | Tela de login com credenciais e atalhos rápidos |
+| `/register` | GET / POST | Público | Cadastro de novos clientes (nascem no Plano Free) |
+| `/login` | GET / POST | Público | Login com credenciais e atalhos rápidos |
 | `/quick-login/<id>` | GET | Público | Atalho de teste rápido para Admin, Cliente e Funcionário |
 | `/logout` | GET | Autenticado | Encerramento de sessão |
 | `/quotes` | GET | Autenticado | Tela de orçamentos (Visão Cliente vs Visão Admin) |
-| `/quotes/new` | GET / POST | Cliente / Autenticado | Formulário de criação de novo orçamento |
+| `/quotes/new` | GET / POST | Cliente / Autenticado | Formulário de criação com validação de limite Free |
 | `/quotes/<id>/status` | POST | Admin / Funcionário | Devolução do orçamento: altera status e grava parecer opcional |
 | `/quotes/<id>/delete` | POST | Admin | Exclusão de orçamento com confirmação (RBAC) |
-| `/api/quotes` | GET / POST | Autenticado / API | CRUD REST com isolamento por usuário |
+| `/subscribe` | GET | Autenticado | Tela de planos e checkout recorrente |
+| `/create-checkout-session`| POST | Autenticado | Inicia Checkout de assinatura no Stripe (`mode="subscription"`) |
+| `/create-portal-session` | POST | Assinante Pro | Abre o Billing Portal do Stripe para gerenciar/cancelar |
+| `/subscription/success` | GET | Autenticado | Retorno informativo pós-checkout |
+| `/subscription/cancel` | GET | Autenticado | Retorno de cancelamento do checkout |
+| `/webhook` | POST | Público / Stripe | Webhook oficial com validação de assinatura e idempotência |
+| `/admin/saas` | GET | Admin | Painel com MRR de teste, usuários por plano e logs |
+| `/api/quotes` | GET / POST | Autenticado / API | CRUD com validação estrita de limite Free (403 Forbidden) |
 | `/api/quotes/<id>` | GET / DELETE | Autenticado / API | Detalhes e remoção com bloqueio RBAC |
+| `/api/saas/metrics` | GET | Admin | API REST com dados consolidados de faturamento e MRR |
 
 ---
 
-## 9. Regras de Negócio e Isolamento de Dados (Lógica "Se X, Então Y")
-
-- **Se** o usuário for um `cliente` comum, **então** ele só pode visualizar e editar os seus próprios orçamentos e dados de perfil (Multi-Tenancy).
-- **Se** o usuário for um `admin` ou `funcionario`, **então** o painel de orçamentos exibe todas as solicitações, dados do cliente solicitante e formulário para devolução de orçamento com mensagem técnica.
-- **Se** um usuário não autenticado tentar acessar `/quotes` ou `/quotes/new`, **então** é redirecionado para `/login` com aviso em tela.
-- **Se** um usuário tentar acessar o ID de um registro pertencente a outro usuário diretamente via URL ou API, **então** o sistema retorna `403 Forbidden` ou `404 Not Found`.
-- **Se** uma requisição for feita para uma rota restrita utilizando um papel sem permissão, **então** o sistema bloqueia com `403 Forbidden`.
-- **Se** o cliente assinar o plano **Clube VIP**, **então** o status da assinatura é atualizado via webhook do Stripe e os benefícios (descontos e higienização mensal) são liberados no perfil.
-
----
-
-## 10. Modelo de Dados Relacional (`db/001_dominio.sql`)
+## 6. Modelo de Dados Relacional (`db/001_dominio.sql`)
 
 ### Entidades e Relacionamentos:
 
-1. **`users` (Usuários e Papéis RBAC)**
+1. **`users` (Usuários, Papéis RBAC e Assinaturas Stripe)**
    - `id INT AUTO_INCREMENT PRIMARY KEY`
    - `name VARCHAR(100) NOT NULL`
    - `email VARCHAR(150) NOT NULL UNIQUE`
    - `password_hash VARCHAR(255) NOT NULL`
    - `role ENUM('admin', 'funcionario', 'cliente') NOT NULL DEFAULT 'cliente'`
+   - `plan ENUM('free', 'pro') NOT NULL DEFAULT 'free'`
+   - `stripe_customer_id VARCHAR(255) NULL`
+   - `stripe_subscription_id VARCHAR(255) NULL`
+   - `subscription_status ENUM('active', 'past_due', 'canceled', 'unpaid', 'incomplete', 'incomplete_expired', 'trialing') NULL DEFAULT NULL`
    - `created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
 
 2. **`vehicles` (Veículos / Garagem)**
@@ -169,6 +149,19 @@ sequenceDiagram
    - `description TEXT NOT NULL`
    - `status ENUM('pendente', 'em_analise', 'aprovado', 'concluido', 'cancelado') NOT NULL DEFAULT 'pendente'`
    - `image_path VARCHAR(255) NULL`
-   - `admin_notes TEXT NULL` *(Texto opcional de parecer técnico/valor enviado pelo admin ao devolver o orçamento)*
+   - `admin_notes TEXT NULL` *(Parecer técnico/valor opcional devolvido pela oficina)*
    - `created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
    - `updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`
+
+4. **`audit_logs` (Histórico de Eventos e Auditoria)**
+   - `id INT AUTO_INCREMENT PRIMARY KEY`
+   - `event_type VARCHAR(100) NOT NULL`
+   - `description TEXT NOT NULL`
+   - `user_id INT NULL`
+   - `payload TEXT NULL`
+   - `created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
+
+5. **`processed_webhooks` (Idempotência de Eventos)**
+   - `id VARCHAR(255) PRIMARY KEY`
+   - `event_type VARCHAR(100) NOT NULL`
+   - `processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`

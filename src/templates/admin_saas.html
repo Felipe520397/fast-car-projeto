@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Fast-Car + | Painel Administrativo SaaS & MRR{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="font-size: 2rem; color: #111; margin-bottom: 0.3rem;">
+                📊 Painel Administrativo SaaS & Métricas Stripe
+            </h2>
+            <p style="color: #666; font-size: 1rem;">
+                Visão consolidada da receita recorrente (MRR), usuários por plano e eventos de auditoria.
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('list_quotes') }}" class="btn btn-secondary">
+                🛡️ Ver Orçamentos
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- CARDS DE MÉTRICAS SAAS EXIGIDAS NO REQUISITO 6 -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 2rem;">
+    <div class="stat-box" style="border-left-color: #2e7d32;">
+        <div class="stat-number" style="color: #2e7d32;">
+            R$ {{ "%.2f"|format(saas_metrics.mrr) }}
+        </div>
+        <div class="stat-label">MRR de Teste (Mensal)</div>
+        <div style="font-size: 0.75rem; color: #666; margin-top: 0.3rem;">
+            R$ 49,90 x {{ saas_metrics.active_subs_count }} assinaturas ativas
+        </div>
+    </div>
+
+    <div class="stat-box" style="border-left-color: #ff9800;">
+        <div class="stat-number" style="color: #e65100;">
+            {{ saas_metrics.active_subs_count }}
+        </div>
+        <div class="stat-label">Assinaturas Ativas</div>
+        <div style="font-size: 0.75rem; color: #666; margin-top: 0.3rem;">
+            Clientes pagantes Clube VIP
+        </div>
+    </div>
+
+    <div class="stat-box" style="border-left-color: #ffd700;">
+        <div class="stat-number" style="color: #b78103;">
+            {{ saas_metrics.pro_count }}
+        </div>
+        <div class="stat-label">Usuários no Plano Pro</div>
+        <div style="font-size: 0.75rem; color: #666; margin-top: 0.3rem;">
+            Acesso ilimitado a orçamentos
+        </div>
+    </div>
+
+    <div class="stat-box" style="border-left-color: #546e7a;">
+        <div class="stat-number" style="color: #37474f;">
+            {{ saas_metrics.free_count }}
+        </div>
+        <div class="stat-label">Usuários no Plano Free</div>
+        <div style="font-size: 0.75rem; color: #666; margin-top: 0.3rem;">
+            Limitados a até 3 orçamentos
+        </div>
+    </div>
+</div>
+
+<!-- LISTA DE USUÁRIOS E SEUS PLANOS -->
+<div class="card" style="margin-bottom: 2rem;">
+    <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: #111;">
+        👥 Usuários Cadastrados & Situação da Assinatura
+    </h3>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Papel</th>
+                    <th>Plano Atual</th>
+                    <th>Status no Stripe</th>
+                    <th>ID Assinatura</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in all_users %}
+                <tr>
+                    <td>#{{ user.id }}</td>
+                    <td><strong>{{ user.name }}</strong></td>
+                    <td>{{ user.email }}</td>
+                    <td><code>{{ user.role }}</code></td>
+                    <td>
+                        {% if user.plan == 'pro' %}
+                            <span class="plan-badge pro">⭐ PRO</span>
+                        {% else %}
+                            <span class="plan-badge free">FREE</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.subscription_status == 'active' %}
+                            <span class="status-badge status-aprovado">Ativa</span>
+                        {% elif user.subscription_status == 'past_due' %}
+                            <span class="status-badge status-pendente">Inadimplente (past_due)</span>
+                        {% elif user.subscription_status == 'canceled' %}
+                            <span class="status-badge status-cancelado">Cancelada</span>
+                        {% else %}
+                            <span style="color: #999; font-size: 0.85rem;">Sem assinatura</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.stripe_subscription_id %}
+                            <code style="font-size: 0.8rem;">{{ user.stripe_subscription_id }}</code>
+                        {% else %}
+                            <span style="color: #bbb;">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ÚLTIMOS EVENTOS DO LOG (AUDIT LOGS / WEBHOOKS) -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h3 style="font-size: 1.25rem; color: #111; margin: 0;">
+            📜 Últimos Eventos de Auditoria & Webhooks do Stripe
+        </h3>
+        <span style="font-size: 0.8rem; color: #666;">
+            Histórico auditável mantido em tempo real
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 160px;">Data/Hora</th>
+                    <th style="width: 220px;">Tipo de Evento</th>
+                    <th>Descrição do Acontecimento</th>
+                    <th style="width: 100px;">Usuário</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in saas_metrics.recent_logs %}
+                <tr>
+                    <td style="font-size: 0.82rem; color: #666;">{{ log.created_at }}</td>
+                    <td>
+                        <span class="status-badge {% if 'completed' in log.event_type or 'active' in log.event_type %}status-aprovado{% elif 'deleted' in log.event_type or 'failed' in log.event_type %}status-cancelado{% elif 'limit' in log.event_type %}status-pendente{% else %}status-em_analise{% endif %}">
+                            {{ log.event_type }}
+                        </span>
+                    </td>
+                    <td style="font-size: 0.88rem;">{{ log.description }}</td>
+                    <td>
+                        {% if log.user_id %}
+                            <span style="font-size: 0.82rem; color: #444;">ID #{{ log.user_id }}</span>
+                        {% else %}
+                            <span style="color: #bbb;">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

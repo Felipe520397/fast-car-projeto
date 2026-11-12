@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Fast-Car + | Criar Nova Conta{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1 style="font-size: 1.8rem; margin-bottom: 0.2rem;">
+                FAST-CAR<span style="color: var(--primary);">+</span>
+            </h1>
+            <h2>Criar Conta de Cliente</h2>
+            <p>Cadastre-se para solicitar orçamentos e gerenciar seus veículos</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('register_page') }}">
+            <div class="form-group">
+                <label class="form-label" for="name">Nome Completo *</label>
+                <input type="text" id="name" name="name" class="form-control" 
+                       placeholder="Ex: Carlos Silva" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">E-mail *</label>
+                <input type="email" id="email" name="email" class="form-control" 
+                       placeholder="seu.email@exemplo.com" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Senha *</label>
+                <input type="password" id="password" name="password" class="form-control" 
+                       placeholder="Crie sua senha" value="123456" required>
+            </div>
+
+            <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid var(--info); padding: 0.85rem; border-radius: 6px; margin-bottom: 1.25rem;">
+                <strong style="color: #01579b; font-size: 0.85rem;">ℹ️ Regra do Modelo SaaS:</strong>
+                <p style="color: #555; font-size: 0.82rem; margin-top: 0.2rem;">
+                    Sua nova conta nasce automaticamente no <strong>Plano Free</strong>, permitindo solicitar até <strong>3 orçamentos gratuitos</strong>. Você poderá assinar o Clube VIP (Pro) a qualquer momento.
+                </p>
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%; padding: 0.8rem;">
+                ✓ Criar Minha Conta no Plano Free
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #666;">
+            Já possui uma conta? <a href="{{ url_for('login_page') }}" style="color: var(--primary); font-weight: 600; text-decoration: none;">Faça login aqui</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

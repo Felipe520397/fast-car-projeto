@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Fast-Car + | Status do Checkout{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 3rem auto; text-align: center;">
+    <div class="card">
+        {% if status == 'success' %}
+            <div style="font-size: 3.5rem; color: #2e7d32; margin-bottom: 1rem;">🎉</div>
+            <h2 style="font-size: 1.8rem; color: #111; margin-bottom: 0.5rem;">
+                Checkout do Stripe Concluído!
+            </h2>
+            <p style="color: #555; font-size: 0.95rem; margin-bottom: 1.5rem;">
+                Sua transação no modo de teste foi autorizada com sucesso.
+            </p>
+
+            <div style="background: #e8f5e9; border: 1px solid #c8e6c9; border-left: 4px solid #2e7d32; padding: 1rem; border-radius: 6px; text-align: left; margin-bottom: 1.5rem; font-size: 0.88rem; color: #1b5e20;">
+                <strong>ℹ️ Arquitetura SaaS Orientada a Webhooks:</strong><br>
+                O seu plano <strong>não muda pelo redirecionamento</strong> do navegador. A ativação definitiva no banco de dados é realizada quando o evento <code>checkout.session.completed</code> for entregue pelo webhook do Stripe.
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="{{ url_for('list_quotes') }}" class="btn">
+                    Ir para Meus Orçamentos
+                </a>
+            </div>
+        {% else %}
+            <div style="font-size: 3.5rem; color: #e65100; margin-bottom: 1rem;">↩️</div>
+            <h2 style="font-size: 1.8rem; color: #111; margin-bottom: 0.5rem;">
+                Assinatura Cancelada
+            </h2>
+            <p style="color: #666; font-size: 0.95rem; margin-bottom: 1.5rem;">
+                O processo de checkout foi cancelado antes da conclusão. Nenhuma cobrança foi efetuada.
+            </p>
+
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="{{ url_for('subscribe_page') }}" class="btn">
+                    Tentar Novamente
+                </a>
+                <a href="{{ url_for('list_quotes') }}" class="btn btn-secondary">
+                    Voltar aos Orçamentos
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
